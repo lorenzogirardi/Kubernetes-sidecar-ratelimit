@@ -342,7 +342,7 @@ And now the Rate limiting section
                       value: 'true'
                   local_rate_limit_per_downstream_connection: false
 ```
-we have a bucket of 29 token , and every second it re-enable the 29 token in the bucket ... i mean ... 29req/second :-) 
+we have a bucket of 29 token , and every second it re-enable the 29 token in the bucket ... i mean ... 29req/second *almost* :-) 
 <br>
 
 ### Handson  
