@@ -343,5 +343,186 @@ And now the Rate limiting section
                   local_rate_limit_per_downstream_connection: false
 ```
 we have a bucket of 29 token , and every second it re-enable the 29 token in the bucket ... i mean ... 29req/second :-) 
+<br>
+
+### Handson  
+
+Again i changed the rate limit to 2req/second  
+```
+                  token_bucket:
+                    max_tokens: 2
+                    tokens_per_fill: 2
+                    fill_interval: 1s
+```
+in kubernetes
+```pytbak              pytbak-stable-bd648fd46-nj95m              2/2     Running       0                 13s```   
+
+kubectl describe pod pytbak-stable-bd648fd46-nj95m -n pytbak
+```
+Name:         pytbak-stable-bd648fd46-nj95m
+Namespace:    pytbak
+Priority:     0
+Node:         instance-20220215-1853/10.0.254.135
+Start Time:   Sat, 11 Feb 2023 11:19:45 +0000
+Labels:       app=pytbak
+              pod-template-hash=bd648fd46
+              track=pytbak-stable
+Annotations:  cni.projectcalico.org/podIP: 10.1.156.173/32
+              cni.projectcalico.org/podIPs: 10.1.156.173/32
+              prometheus.io/path: /metrics
+              prometheus.io/port: 5000
+              prometheus.io/scrape: true
+Status:       Running
+IP:           10.1.156.173
+IPs:
+  IP:           10.1.156.173
+Controlled By:  ReplicaSet/pytbak-stable-bd648fd46
+Containers:
+  pytbak:
+    Container ID:   containerd://9a54504e73a14746299366e2941b51f7069b6649208329a3f87708b053ef1eaf
+    Image:          lgirardi/rest-test-multip:0.6
+    Image ID:       docker.io/lgirardi/rest-test-multip@sha256:c94695a04fb3b862bfb576ead460aba3528bd098327f88122d087f48380506dd
+    Port:           5000/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Sat, 11 Feb 2023 11:19:46 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     300m
+      memory:  250Mi
+    Requests:
+      cpu:        30m
+      memory:     125Mi
+    Liveness:     http-get http://:5000/api/ delay=40s timeout=10s period=10s #success=1 #failure=3
+    Readiness:    http-get http://:5000/api/ delay=5s timeout=15s period=10s #success=1 #failure=3
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-xrr7c (ro)
+  sidecar:
+    Container ID:   containerd://a0d45982aa56704983a89bacd664e5cbb8b38b1df943df92ad879e7c66986c22
+    Image:          envoyproxy/envoy:v1.22-latest
+    Image ID:       docker.io/envoyproxy/envoy@sha256:3b1e0114dbead3fbd9f561994f3894f5d113a815e023065cabdf0c48d55396ce
+    Port:           5002/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Sat, 11 Feb 2023 11:19:47 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  150Mi
+    Requests:
+      cpu:        30m
+      memory:     55Mi
+    Environment:  <none>
+    Mounts:
+      /etc/envoy from sidecar-config (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-xrr7c (ro)
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Volumes:
+  sidecar-config:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      pytbakt-configmap
+    Optional:  false
+  kube-api-access-xrr7c:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age    From               Message
+  ----    ------     ----   ----               -------
+  Normal  Scheduled  3m53s  default-scheduler  Successfully assigned pytbak/pytbak-stable-bd648fd46-nj95m to instance-20220215-1853
+  Normal  Pulled     3m53s  kubelet            Container image "lgirardi/rest-test-multip:0.6" already present on machine
+  Normal  Created    3m53s  kubelet            Created container pytbak
+  Normal  Started    3m53s  kubelet            Started container pytbak
+  Normal  Pulled     3m53s  kubelet            Container image "envoyproxy/envoy:v1.22-latest" already present on machine
+  Normal  Created    3m53s  kubelet            Created container sidecar
+  Normal  Started    3m52s  kubelet            Started container sidecar
+  ```
 
 
+With curl 
+
+$ while true;do curl -I  http://oracolo.k8s.it/api/fib/1 && sleep 0.4;done
+```
+HTTP/1.1 200 OK
+Date: Sat, 11 Feb 2023 11:29:48 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 1
+Connection: keep-alive
+vary: Accept-Encoding
+x-envoy-upstream-service-time: 2
+
+HTTP/1.1 200 OK
+Date: Sat, 11 Feb 2023 11:29:49 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 1
+Connection: keep-alive
+vary: Accept-Encoding
+x-envoy-upstream-service-time: 2
+
+HTTP/1.1 429 Too Many Requests
+Date: Sat, 11 Feb 2023 11:29:49 GMT
+Content-Type: text/plain
+Content-Length: 18
+Connection: keep-alive
+x-local-rate-limit: true
+
+HTTP/1.1 200 OK
+Date: Sat, 11 Feb 2023 11:29:50 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 1
+Connection: keep-alive
+vary: Accept-Encoding
+x-envoy-upstream-service-time: 2
+
+HTTP/1.1 200 OK
+Date: Sat, 11 Feb 2023 11:29:50 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 1
+Connection: keep-alive
+vary: Accept-Encoding
+x-envoy-upstream-service-time: 2
+
+HTTP/1.1 429 Too Many Requests
+Date: Sat, 11 Feb 2023 11:29:50 GMT
+Content-Type: text/plain
+Content-Length: 18
+Connection: keep-alive
+x-local-rate-limit: true
+
+HTTP/1.1 200 OK
+Date: Sat, 11 Feb 2023 11:29:51 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 1
+Connection: keep-alive
+vary: Accept-Encoding
+x-envoy-upstream-service-time: 2
+
+HTTP/1.1 200 OK
+Date: Sat, 11 Feb 2023 11:29:51 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 1
+Connection: keep-alive
+vary: Accept-Encoding
+x-envoy-upstream-service-time: 2
+
+HTTP/1.1 429 Too Many Requests
+Date: Sat, 11 Feb 2023 11:29:51 GMT
+Content-Type: text/plain
+Content-Length: 18
+Connection: keep-alive
+x-local-rate-limit: true
+```
