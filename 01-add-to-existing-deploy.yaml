@@ -1,0 +1,21 @@
+      - name: sidecar
+        image: envoyproxy/envoy:v1.22-latest
+        resources:
+          limits:
+            cpu: 100m
+            memory: 150Mi
+          requests:
+            cpu: 30m
+            memory: 55Mi
+        ports:
+          - name: http
+            containerPort: 5002
+            protocol: TCP
+        volumeMounts:
+          - name: sidecar-config
+            mountPath: "/etc/envoy"
+            readOnly: true
+      volumes:
+        - name: sidecar-config
+          configMap:
+            name: pytbakt-configmap
