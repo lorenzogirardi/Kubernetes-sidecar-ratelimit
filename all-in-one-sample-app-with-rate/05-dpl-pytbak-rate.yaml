@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: pytbak
+    track: pytbak-stable
+  name: pytbak-stable
+  namespace: pytbak
+spec:
+  minReadySeconds: 10
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: pytbak
+      track: pytbak-stable
+  strategy:
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "5000"
+      labels:
+        app: pytbak
+        track: pytbak-stable
+    spec:
+      containers:
+      - name: pytbak
+        image: lgirardi/rest-test-multip:0.6
+        resources:
+          limits:
+            cpu: 300m
+            memory: 250Mi
+          requests:
+            cpu: 30m
+            memory: 125Mi
+        ports:
+        - name: http
+          containerPort: 5000
+        livenessProbe:
+          httpGet:
+            path: /api/
+            port: 5000
+          initialDelaySeconds: 40
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/
+            port: 5000
+          initialDelaySeconds: 5
+          timeoutSeconds: 15
+      - name: sidecar
+        image: envoyproxy/envoy:v1.22-latest
+        resources:
+          limits:
+            cpu: 100m
+            memory: 150Mi
+          requests:
+            cpu: 30m
+            memory: 55Mi
+        ports:
+          - name: http
+            containerPort: 5002
+            protocol: TCP
+        volumeMounts:
+          - name: sidecar-config
+            mountPath: "/etc/envoy"
+            readOnly: true  
+      volumes:
+        - name: sidecar-config
+          configMap:
+            name: pytbakt-configmap
+
+
+
