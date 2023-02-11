@@ -526,3 +526,11 @@ Content-Length: 18
 Connection: keep-alive
 x-local-rate-limit: true
 ```
+<br>
+<br>
+Both solution are working, different ways and different impacts on the app.  
+In the next episode i will explain why i did this job , 
+however, now in case u need a simple way to rate limit you app you can have a sidecar container out of the box.
+
+
+
